@@ -29,13 +29,13 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 }) => {
   const systems = [
     { id: 'all', name: 'All Systems', color: 'bg-slate-500' },
-    { id: 'skeletal', name: 'Skeletal System', color: 'bg-gray-500', icon: '🦴' },
-    { id: 'muscular', name: 'Muscular System', color: 'bg-red-500', icon: '💪' },
-    { id: 'circulatory', name: 'Circulatory System', color: 'bg-red-600', icon: '❤️' },
-    { id: 'respiratory', name: 'Respiratory System', color: 'bg-blue-500', icon: '🫁' },
-    { id: 'nervous', name: 'Nervous System', color: 'bg-yellow-500', icon: '🧠' },
-    { id: 'digestive', name: 'Digestive System', color: 'bg-green-500', icon: '🍽️' },
-    { id: 'urinary', name: 'Urinary System', color: 'bg-purple-500', icon: '🫘' },
+    { id: 'skeletal', name: 'Skeletal System', color: 'bg-gray-500' },
+    { id: 'muscular', name: 'Muscular System', color: 'bg-red-500' },
+    { id: 'circulatory', name: 'Circulatory System', color: 'bg-red-600'},
+    { id: 'respiratory', name: 'Respiratory System', color: 'bg-blue-500'},
+    { id: 'nervous', name: 'Nervous System', color: 'bg-yellow-500'},
+    { id: 'digestive', name: 'Digestive System', color: 'bg-green-500'},
+    { id: 'urinary', name: 'Urinary System', color: 'bg-purple-500'},
   ];
 
   return (
