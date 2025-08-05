@@ -17,14 +17,14 @@ interface AnatomyViewerRef {
 }
 
 const systemModels: { [key: string]: string } = {
-  'all': '/models/scene.gltf',
-  'skeletal': '/models/skeletal-system.gltf',
-  'muscular': '/models/muscular-system.gltf',
-  'circulatory': '/models/circulatory-system.gltf',
-  'respiratory': '/models/respiratory-system.gltf',
-  'nervous': '/models/nervous-system.gltf',
-  'digestive': '/models/digestive-system.gltf',
-  'urinary': '/models/urinary-system.gltf',
+  all: '/models/scene.gltf',
+  skeletal: '/models/skeletal-system.gltf',
+  muscular: '/models/muscular-system.gltf',
+  circulatory: '/models/circulatory-system.gltf',
+  respiratory: '/models/respiratory-system.gltf',
+  nervous: '/models/nervous-system.gltf',
+  digestive: '/models/digestive-system.gltf',
+  urinary: '/models/urinary-system.gltf',
 };
 
 const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
@@ -65,7 +65,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       },
       resetCamera: () => {
         if (cameraRef.current && controlsRef.current) {
-          const defaultPos = new THREE.Vector3(0, 0, 3); // updated
+          const defaultPos = new THREE.Vector3(0, 0, 2.2);
           const defaultTarget = new THREE.Vector3(0, 0, 0);
           const startPos = cameraRef.current.position.clone();
           const startTarget = controlsRef.current.target.clone();
@@ -101,7 +101,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
         0.1,
         1000
       );
-      camera.position.set(0, 0, 2); // zoomed in
+      camera.position.set(0, 0, 2.2);
       cameraRef.current = camera;
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -123,8 +123,8 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
-      controls.maxDistance = 8;     // adjusted
-      controls.minDistance = 1.5;   // adjusted
+      controls.maxDistance = 8;
+      controls.minDistance = 1.0;
       controlsRef.current = controls;
 
       setIsLoading(true);
@@ -149,7 +149,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       const animate = () => {
         requestAnimationFrame(animate);
         if (modelRef.current) {
-          modelRef.current.rotation.y += 0.005; // faster rotation
+          modelRef.current.rotation.y += 0.005;
         }
         controls.update();
         renderer.render(scene, camera);
@@ -187,6 +187,8 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
     }, [selectedSystem]);
 
     useEffect(() => {
+      if (!modelRef.current || organsRef.current.size === 0) return;
+
       organsRef.current.forEach((organ, name) => {
         const isAffected = affectedOrgans.includes(name);
         const isSelected = selectedOrgan === name;
@@ -194,7 +196,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
 
         if (isSelected) {
           mat.emissive.setHex(0x0066ff);
-          mat.emissiveIntensity = 0.3;
+          mat.emissiveIntensity = 0.5;
         } else if (isAffected) {
           const intensity = painIntensity / 10;
           mat.emissive.setHex(0xff0000);
@@ -235,11 +237,8 @@ function loadSystemModel(
     modelPath,
     (gltf) => {
       const model = gltf.scene;
-
-      // Scale up model
       model.scale.set(1.5, 1.5, 1.5);
 
-      // Center model
       const box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
       model.position.sub(center);
@@ -248,9 +247,19 @@ function loadSystemModel(
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          if (child.material) child.userData.originalMaterial = child.material.clone();
+
+          const standardMat = child.material as THREE.MeshStandardMaterial;
+          const phongMat = new THREE.MeshPhongMaterial({
+            color: standardMat.color,
+            emissive: 0x000000,
+            shininess: 30,
+          });
+
+          child.material = phongMat;
+          child.userData.originalMaterial = phongMat.clone();
           child.userData.layer = systemType;
           child.userData.name = child.name;
+
           organsMap.set(child.name, child as THREE.Mesh);
         }
       });
