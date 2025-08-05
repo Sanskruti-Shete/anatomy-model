@@ -18,7 +18,7 @@ interface AnatomyViewerRef {
 
 // Model paths for different organ systems
 const systemModels: { [key: string]: string } = {
-  'all': '/models/complete-anatomy.gltf',
+  'all': '/models/scene.gltf',
   'skeletal': '/models/skeletal-system.gltf',
   'muscular': '/models/muscular-system.gltf',
   'circulatory': '/models/circulatory-system.gltf',
