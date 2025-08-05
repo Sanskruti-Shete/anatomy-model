@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
