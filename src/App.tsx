@@ -8,7 +8,7 @@ import { organDatabase, symptomDatabase, cameraPresets } from './data/anatomyDat
 
 function App() {
   const [selectedOrgan, setSelectedOrgan] = useState<OrganData | null>(null);
-  const [visibleLayers, setVisibleLayers] = useState<string[]>(['skeletal', 'muscular', 'circulatory', 'nervous', 'digestive']);
+  const [selectedSystem, setSelectedSystem] = useState<string>('all');
   const [painIntensity, setPainIntensity] = useState<number>(0);
   const [activeSymptoms, setActiveSymptoms] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,12 +30,8 @@ function App() {
     );
   };
 
-  const handleLayerToggle = (layer: string) => {
-    setVisibleLayers(prev => 
-      prev.includes(layer)
-        ? prev.filter(l => l !== layer)
-        : [...prev, layer]
-    );
+  const handleSystemSelect = (system: string) => {
+    setSelectedSystem(system);
   };
 
   const handleCameraPreset = (preset: CameraPreset) => {
@@ -85,8 +81,8 @@ function App() {
             </div>
 
             <ControlPanel
-              visibleLayers={visibleLayers}
-              onLayerToggle={handleLayerToggle}
+              selectedSystem={selectedSystem}
+              onSystemSelect={handleSystemSelect}
               painIntensity={painIntensity}
               onPainIntensityChange={setPainIntensity}
               activeSymptoms={activeSymptoms}
@@ -130,7 +126,7 @@ function App() {
           <AnatomyViewer
             ref={anatomyViewerRef}
             onOrganClick={handleOrganClick}
-            visibleLayers={visibleLayers}
+            selectedSystem={selectedSystem}
             affectedOrgans={affectedOrgans}
             painIntensity={painIntensity}
             selectedOrgan={selectedOrgan?.name}

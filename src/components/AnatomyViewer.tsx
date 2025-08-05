@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 interface AnatomyViewerProps {
   onOrganClick: (organName: string) => void;
-  visibleLayers: string[];
+  selectedSystem: string;
   affectedOrgans: string[];
   painIntensity: number;
   selectedOrgan?: string;
@@ -17,7 +17,7 @@ interface AnatomyViewerRef {
 }
 
 const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
-  ({ onOrganClick, visibleLayers, affectedOrgans, painIntensity, selectedOrgan }, ref) => {
+  ({ onOrganClick, selectedSystem, affectedOrgans, painIntensity, selectedOrgan }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const sceneRef = useRef<THREE.Scene>();
     const rendererRef = useRef<THREE.WebGLRenderer>();
@@ -175,13 +175,17 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       };
     }, [onOrganClick]);
 
-    // Update organ visibility based on layers
+    // Update organ visibility based on selected system
     useEffect(() => {
       organsRef.current.forEach((organ, name) => {
         const layer = organ.userData.layer;
-        organ.visible = visibleLayers.includes(layer);
+        if (selectedSystem === 'all') {
+          organ.visible = true;
+        } else {
+          organ.visible = layer === selectedSystem;
+        }
       });
-    }, [visibleLayers]);
+    }, [selectedSystem]);
 
     // Update affected organs highlighting
     useEffect(() => {

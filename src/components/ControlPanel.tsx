@@ -3,8 +3,8 @@ import { Eye, EyeOff, Zap, Camera, Layers, Activity } from 'lucide-react';
 import { Symptom, CameraPreset } from '../types/anatomy';
 
 interface ControlPanelProps {
-  visibleLayers: string[];
-  onLayerToggle: (layer: string) => void;
+  selectedSystem: string;
+  onSystemSelect: (system: string) => void;
   painIntensity: number;
   onPainIntensityChange: (intensity: number) => void;
   activeSymptoms: string[];
@@ -16,8 +16,8 @@ interface ControlPanelProps {
 }
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
-  visibleLayers,
-  onLayerToggle,
+  selectedSystem,
+  onSystemSelect,
   painIntensity,
   onPainIntensityChange,
   activeSymptoms,
@@ -27,14 +27,15 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   currentView,
   cameraPresets,
 }) => {
-  const layers = [
-    { id: 'skeletal', name: 'Skeletal System', color: 'bg-gray-500' },
-    { id: 'muscular', name: 'Muscular System', color: 'bg-red-500' },
-    { id: 'circulatory', name: 'Circulatory System', color: 'bg-red-600' },
-    { id: 'respiratory', name: 'Respiratory System', color: 'bg-blue-500' },
-    { id: 'nervous', name: 'Nervous System', color: 'bg-yellow-500' },
-    { id: 'digestive', name: 'Digestive System', color: 'bg-green-500' },
-    { id: 'urinary', name: 'Urinary System', color: 'bg-purple-500' },
+  const systems = [
+    { id: 'all', name: 'All Systems', color: 'bg-slate-500', icon: '🫀' },
+    { id: 'skeletal', name: 'Skeletal System', color: 'bg-gray-500', icon: '🦴' },
+    { id: 'muscular', name: 'Muscular System', color: 'bg-red-500', icon: '💪' },
+    { id: 'circulatory', name: 'Circulatory System', color: 'bg-red-600', icon: '❤️' },
+    { id: 'respiratory', name: 'Respiratory System', color: 'bg-blue-500', icon: '🫁' },
+    { id: 'nervous', name: 'Nervous System', color: 'bg-yellow-500', icon: '🧠' },
+    { id: 'digestive', name: 'Digestive System', color: 'bg-green-500', icon: '🍽️' },
+    { id: 'urinary', name: 'Urinary System', color: 'bg-purple-500', icon: '🫘' },
   ];
 
   return (
@@ -45,24 +46,26 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           <Layers className="text-blue-400" size={20} />
           Organ Systems
         </h3>
-        <div className="space-y-2">
-          {layers.map(layer => (
-            <div key={layer.id} className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-3 h-3 rounded-full ${layer.color}`}></div>
-                <span className="text-sm text-slate-300">{layer.name}</span>
+        <div className="grid grid-cols-1 gap-2">
+          {systems.map(system => (
+            <button
+              key={system.id}
+              onClick={() => onSystemSelect(system.id)}
+              className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 text-left ${
+                selectedSystem === system.id
+                  ? 'bg-blue-600 text-white shadow-lg transform scale-105'
+                  : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-3 flex-1">
+                <span className="text-lg">{system.icon}</span>
+                <div className={`w-3 h-3 rounded-full ${system.color}`}></div>
+                <span className="text-sm font-medium">{system.name}</span>
               </div>
-              <button
-                onClick={() => onLayerToggle(layer.id)}
-                className={`p-1 rounded transition-colors duration-200 ${
-                  visibleLayers.includes(layer.id)
-                    ? 'text-blue-400 hover:text-blue-300'
-                    : 'text-slate-500 hover:text-slate-400'
-                }`}
-              >
-                {visibleLayers.includes(layer.id) ? <Eye size={16} /> : <EyeOff size={16} />}
-              </button>
-            </div>
+              {selectedSystem === system.id && (
+                <div className="w-2 h-2 bg-white rounded-full"></div>
+              )}
+            </button>
           ))}
         </div>
       </div>
