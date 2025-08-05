@@ -16,6 +16,18 @@ interface AnatomyViewerRef {
   resetCamera: () => void;
 }
 
+// Model paths for different organ systems
+const systemModels: { [key: string]: string } = {
+  'all': '/models/complete-anatomy.gltf',
+  'skeletal': '/models/skeletal-system.gltf',
+  'muscular': '/models/muscular-system.gltf',
+  'circulatory': '/models/circulatory-system.gltf',
+  'respiratory': '/models/respiratory-system.gltf',
+  'nervous': '/models/nervous-system.gltf',
+  'digestive': '/models/digestive-system.gltf',
+  'urinary': '/models/urinary-system.gltf',
+};
+
 const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
   ({ onOrganClick, selectedSystem, affectedOrgans, painIntensity, selectedOrgan }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -27,6 +39,8 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
     const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
     const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
     const modelRef = useRef<THREE.Group>();
+    const loaderRef = useRef<GLTFLoader>(new GLTFLoader());
+    const currentSystemRef = useRef<string>('');
 
     useImperativeHandle(ref, () => ({
       setCameraPosition: (position: THREE.Vector3, target: THREE.Vector3) => {
@@ -130,7 +144,8 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       controlsRef.current = controls;
 
       // Load GLTF model
-      loadAnatomyModel(scene, organsRef.current);
+      loadSystemModel(selectedSystem, scene, organsRef.current);
+      currentSystemRef.current = selectedSystem;
 
       // Mouse click handler
       const handleClick = (event: MouseEvent) => {
@@ -175,16 +190,22 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       };
     }, [onOrganClick]);
 
-    // Update organ visibility based on selected system
+    // Load new model when system changes
     useEffect(() => {
-      organsRef.current.forEach((organ, name) => {
-        const layer = organ.userData.layer;
-        if (selectedSystem === 'all') {
-          organ.visible = true;
-        } else {
-          organ.visible = layer === selectedSystem;
+      if (currentSystemRef.current !== selectedSystem && sceneRef.current) {
+        // Clear current model
+        if (modelRef.current) {
+          sceneRef.current.remove(modelRef.current);
+          modelRef.current = undefined;
         }
-      });
+        
+        // Clear organs map
+        organsRef.current.clear();
+        
+        // Load new system model
+        loadSystemModel(selectedSystem, sceneRef.current, organsRef.current);
+        currentSystemRef.current = selectedSystem;
+      }
     }, [selectedSystem]);
 
     // Update affected organs highlighting
@@ -211,11 +232,14 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
   }
 );
 
-function loadAnatomyModel(scene: THREE.Scene, organsMap: Map<string, THREE.Mesh>) {
+function loadSystemModel(systemType: string, scene: THREE.Scene, organsMap: Map<string, THREE.Mesh>) {
+  const modelPath = systemModels[systemType] || systemModels['all'];
   const loader = new GLTFLoader();
   
+  console.log(`Loading model for ${systemType} system: ${modelPath}`);
+  
   loader.load(
-    '/models/scene.gltf',
+    modelPath,
     (gltf) => {
       const model = gltf.scene;
       
@@ -234,72 +258,90 @@ function loadAnatomyModel(scene: THREE.Scene, organsMap: Map<string, THREE.Mesh>
             child.userData.originalMaterial = child.material.clone();
           }
           
-          // Determine organ system based on mesh name
-          const organSystem = determineOrganSystem(child.name);
-          child.userData.layer = organSystem;
+          // Set the system type for this model
+          child.userData.layer = systemType;
           child.userData.name = child.name;
           
           // Add to organs map for interaction
           organsMap.set(child.name, child as THREE.Mesh);
           
-          console.log(`Loaded organ: ${child.name} (${organSystem})`);
+          console.log(`Loaded organ: ${child.name} (${systemType})`);
         }
       });
       
       scene.add(model);
-      console.log('GLTF model loaded successfully');
+      console.log(`${systemType} system model loaded successfully`);
     },
     (progress) => {
-      console.log('Loading progress:', (progress.loaded / progress.total * 100) + '%');
+      console.log(`${systemType} loading progress:`, (progress.loaded / progress.total * 100) + '%');
     },
     (error) => {
-      console.error('Error loading GLTF model:', error);
+      console.error(`Error loading ${systemType} model:`, error);
       
-      // Fallback: create sample anatomy if model fails to load
-      console.log('Creating fallback sample anatomy...');
-      createFallbackAnatomy(scene, organsMap);
+      // Fallback: create sample anatomy for this system if model fails to load
+      console.log(`Creating fallback anatomy for ${systemType} system...`);
+      createFallbackAnatomy(systemType, scene, organsMap);
     }
   );
 }
 
-function determineOrganSystem(meshName: string): string {
-  const name = meshName.toLowerCase();
-  
-  // Map mesh names to organ systems
-  if (name.includes('heart') || name.includes('blood') || name.includes('vessel') || name.includes('artery') || name.includes('vein')) {
-    return 'circulatory';
-  } else if (name.includes('lung') || name.includes('trachea') || name.includes('bronch')) {
-    return 'respiratory';
-  } else if (name.includes('brain') || name.includes('nerve') || name.includes('spinal')) {
-    return 'nervous';
-  } else if (name.includes('stomach') || name.includes('liver') || name.includes('intestine') || name.includes('pancreas')) {
-    return 'digestive';
-  } else if (name.includes('kidney') || name.includes('bladder') || name.includes('ureter')) {
-    return 'urinary';
-  } else if (name.includes('bone') || name.includes('skull') || name.includes('rib') || name.includes('spine') || name.includes('vertebra')) {
-    return 'skeletal';
-  } else if (name.includes('muscle')) {
-    return 'muscular';
-  } else {
-    return 'other';
-  }
-}
+function createFallbackAnatomy(systemType: string, scene: THREE.Scene, organsMap: Map<string, THREE.Mesh>) {
+  // Define organs for each system
+  const systemOrgans: { [key: string]: any[] } = {
+    'all': [
+      { name: 'Heart', position: [-0.3, 0.5, 0], color: 0xff4444, size: 0.3 },
+      { name: 'Liver', position: [0.3, 0.2, 0], color: 0x8B4513, size: 0.4 },
+      { name: 'Lungs', position: [0, 0.7, 0], color: 0xffaaaa, size: 0.35 },
+      { name: 'Stomach', position: [-0.2, 0, 0], color: 0xff6666, size: 0.25 },
+      { name: 'Kidneys', position: [0.4, -0.2, -0.3], color: 0x660000, size: 0.2 },
+      { name: 'Brain', position: [0, 1.2, 0], color: 0xffaacc, size: 0.3 },
+      { name: 'Spine', position: [0, 0, -0.2], color: 0xffffff, size: [0.1, 1.5, 0.1] },
+    ],
+    'circulatory': [
+      { name: 'Heart', position: [0, 0.5, 0], color: 0xff4444, size: 0.4 },
+      { name: 'Aorta', position: [0, 0.8, 0], color: 0xff6666, size: [0.1, 0.6, 0.1] },
+      { name: 'Vena Cava', position: [0.2, 0.5, 0], color: 0x4444ff, size: [0.08, 0.5, 0.08] },
+    ],
+    'respiratory': [
+      { name: 'Lungs', position: [0, 0.5, 0], color: 0xffaaaa, size: 0.4 },
+      { name: 'Trachea', position: [0, 0.8, 0], color: 0xcccccc, size: [0.05, 0.3, 0.05] },
+      { name: 'Bronchi', position: [0, 0.3, 0], color: 0xdddddd, size: 0.15 },
+    ],
+    'digestive': [
+      { name: 'Stomach', position: [0, 0.3, 0], color: 0xff6666, size: 0.3 },
+      { name: 'Liver', position: [0.4, 0.2, 0], color: 0x8B4513, size: 0.35 },
+      { name: 'Small Intestine', position: [0, -0.2, 0], color: 0xffaa66, size: 0.25 },
+      { name: 'Large Intestine', position: [0, -0.5, 0], color: 0xff8844, size: 0.3 },
+    ],
+    'nervous': [
+      { name: 'Brain', position: [0, 1.0, 0], color: 0xffaacc, size: 0.35 },
+      { name: 'Spinal Cord', position: [0, 0, 0], color: 0xffccdd, size: [0.05, 1.2, 0.05] },
+      { name: 'Nerves', position: [0.3, 0.5, 0], color: 0xffffaa, size: 0.1 },
+    ],
+    'urinary': [
+      { name: 'Kidneys', position: [0, 0.2, -0.2], color: 0x660000, size: 0.25 },
+      { name: 'Bladder', position: [0, -0.3, 0], color: 0x884400, size: 0.2 },
+      { name: 'Ureters', position: [0, -0.1, -0.1], color: 0x996600, size: [0.02, 0.4, 0.02] },
+    ],
+    'skeletal': [
+      { name: 'Skull', position: [0, 1.2, 0], color: 0xffffff, size: 0.3 },
+      { name: 'Spine', position: [0, 0, -0.2], color: 0xeeeeee, size: [0.08, 1.5, 0.08] },
+      { name: 'Ribs', position: [0, 0.5, 0], color: 0xdddddd, size: [0.6, 0.4, 0.3] },
+      { name: 'Pelvis', position: [0, -0.5, 0], color: 0xcccccc, size: [0.4, 0.2, 0.3] },
+    ],
+    'muscular': [
+      { name: 'Chest Muscles', position: [0, 0.5, 0.1], color: 0xff6666, size: [0.5, 0.3, 0.2] },
+      { name: 'Arm Muscles', position: [0.4, 0.3, 0], color: 0xff4444, size: 0.2 },
+      { name: 'Leg Muscles', position: [0, -0.5, 0], color: 0xff2222, size: [0.3, 0.6, 0.2] },
+    ],
+  };
 
-function createFallbackAnatomy(scene: THREE.Scene, organsMap: Map<string, THREE.Mesh>) {
-  const organs = [
-    { name: 'Heart', position: [-0.3, 0.5, 0], color: 0xff4444, layer: 'circulatory', size: 0.3 },
-    { name: 'Liver', position: [0.3, 0.2, 0], color: 0x8B4513, layer: 'digestive', size: 0.4 },
-    { name: 'Lungs', position: [0, 0.7, 0], color: 0xffaaaa, layer: 'respiratory', size: 0.35 },
-    { name: 'Stomach', position: [-0.2, 0, 0], color: 0xff6666, layer: 'digestive', size: 0.25 },
-    { name: 'Kidneys', position: [0.4, -0.2, -0.3], color: 0x660000, layer: 'urinary', size: 0.2 },
-    { name: 'Brain', position: [0, 1.2, 0], color: 0xffaacc, layer: 'nervous', size: 0.3 },
-    { name: 'Spine', position: [0, 0, -0.2], color: 0xffffff, layer: 'skeletal', size: [0.1, 1.5, 0.1] },
-  ];
+  const organs = systemOrgans[systemType] || systemOrgans['all'];
 
   organs.forEach(organData => {
     let geometry: THREE.BufferGeometry;
     
-    if (organData.name === 'Spine') {
+    if (Array.isArray(organData.size)) {
       geometry = new THREE.BoxGeometry(
         organData.size[0], 
         organData.size[1], 
@@ -319,7 +361,7 @@ function createFallbackAnatomy(scene: THREE.Scene, organsMap: Map<string, THREE.
     mesh.position.set(...organData.position);
     mesh.userData = {
       name: organData.name,
-      layer: organData.layer,
+      layer: systemType,
     };
     mesh.castShadow = true;
     mesh.receiveShadow = true;
