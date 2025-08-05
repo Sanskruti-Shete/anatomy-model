@@ -111,7 +111,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
         0.1,
         1000
       );
-      camera.position.set(0, 0, 5);
+      camera.position.set(0, 0, 2);
       cameraRef.current = camera;
 
       // Renderer setup
