@@ -31,6 +31,7 @@ const systemModels: { [key: string]: string } = {
 const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
   ({ onOrganClick, selectedSystem, affectedOrgans, painIntensity, selectedOrgan }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const sceneRef = useRef<THREE.Scene>();
     const rendererRef = useRef<THREE.WebGLRenderer>();
     const cameraRef = useRef<THREE.PerspectiveCamera>();
@@ -144,7 +145,8 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       controlsRef.current = controls;
 
       // Load GLTF model
-      loadSystemModel(selectedSystem, scene, organsRef.current);
+      setIsLoading(true);
+      loadSystemModel(selectedSystem, scene, organsRef.current, setIsLoading);
       currentSystemRef.current = selectedSystem;
 
       // Mouse click handler
@@ -193,6 +195,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
     // Load new model when system changes
     useEffect(() => {
       if (currentSystemRef.current !== selectedSystem && sceneRef.current) {
+        setIsLoading(true);
         // Clear current model
         if (modelRef.current) {
           sceneRef.current.remove(modelRef.current);
@@ -203,7 +206,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
         organsRef.current.clear();
         
         // Load new system model
-        loadSystemModel(selectedSystem, sceneRef.current, organsRef.current);
+        loadSystemModel(selectedSystem, sceneRef.current, organsRef.current, setIsLoading);
         currentSystemRef.current = selectedSystem;
       }
     }, [selectedSystem]);
@@ -228,11 +231,22 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       });
     }, [affectedOrgans, painIntensity, selectedOrgan]);
 
-    return <div ref={containerRef} className="w-full h-full" />;
+    return (
+      <div ref={containerRef} className="w-full h-full relative">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-slate-900/50 backdrop-blur-sm">
+            <div className="text-white text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-slate-300">Loading 3D Model...</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   }
 );
 
-function loadSystemModel(systemType: string, scene: THREE.Scene, organsMap: Map<string, THREE.Mesh>) {
+function loadSystemModel(systemType: string, scene: THREE.Scene, organsMap: Map<string, THREE.Mesh>, setIsLoading?: (loading: boolean) => void) {
   const modelPath = systemModels[systemType] || systemModels['all'];
   const loader = new GLTFLoader();
   
@@ -271,6 +285,7 @@ function loadSystemModel(systemType: string, scene: THREE.Scene, organsMap: Map<
       
       scene.add(model);
       console.log(`${systemType} system model loaded successfully`);
+      setIsLoading?.(false);
     },
     (progress) => {
       console.log(`${systemType} loading progress:`, (progress.loaded / progress.total * 100) + '%');
@@ -281,6 +296,7 @@ function loadSystemModel(systemType: string, scene: THREE.Scene, organsMap: Map<
       // Fallback: create sample anatomy for this system if model fails to load
       console.log(`Creating fallback anatomy for ${systemType} system...`);
       createFallbackAnatomy(systemType, scene, organsMap);
+      setIsLoading?.(false);
     }
   );
 }

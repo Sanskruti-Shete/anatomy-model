@@ -146,13 +146,6 @@ function App() {
             </button>
           </div>
 
-          {/* Model Loading Indicator */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-white text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-slate-300">Loading 3D Model...</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
