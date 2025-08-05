@@ -28,7 +28,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   cameraPresets,
 }) => {
   const systems = [
-    { id: 'all', name: 'All Systems', color: 'bg-slate-500', icon: '🫀' },
+    { id: 'all', name: 'All Systems', color: 'bg-slate-500' },
     { id: 'skeletal', name: 'Skeletal System', color: 'bg-gray-500', icon: '🦴' },
     { id: 'muscular', name: 'Muscular System', color: 'bg-red-500', icon: '💪' },
     { id: 'circulatory', name: 'Circulatory System', color: 'bg-red-600', icon: '❤️' },
