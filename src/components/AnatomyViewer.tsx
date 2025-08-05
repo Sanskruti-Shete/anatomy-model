@@ -101,7 +101,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
         0.1,
         1000
       );
-      camera.position.set(0, 0, 3); // zoomed in
+      camera.position.set(0, 0, 2); // zoomed in
       cameraRef.current = camera;
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
