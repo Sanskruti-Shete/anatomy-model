@@ -1,0 +1,11 @@
+Model Information:
+* title:	Muscular insertions
+* source:	https://sketchfab.com/3d-models/muscular-insertions-5f2a69f2b0cc47c2ab9853cabdea881f
+* author:	Z-Anatomy (https://sketchfab.com/Z-Anatomy)
+
+Model License:
+* license type:	CC-BY-SA-4.0 (http://creativecommons.org/licenses/by-sa/4.0/)
+* requirements:	Author must be credited. Modified versions must have the same license. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Muscular insertions" (https://sketchfab.com/3d-models/muscular-insertions-5f2a69f2b0cc47c2ab9853cabdea881f) by Z-Anatomy (https://sketchfab.com/Z-Anatomy) licensed under CC-BY-SA-4.0 (http://creativecommons.org/licenses/by-sa/4.0/)
