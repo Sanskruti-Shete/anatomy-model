@@ -209,21 +209,44 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
     useEffect(() => {
       if (!modelRef.current || organsRef.current.size === 0) return;
 
-      organsRef.current.forEach((organ, name) => {
-        const isAffected = affectedOrgans.includes(name);
-        const isSelected = selectedOrgan === name;
-        const mat = organ.material as THREE.MeshPhongMaterial;
-
-        if (isSelected) {
-          mat.emissive.setHex(0x0066ff);
-          mat.emissiveIntensity = 0.5;
-        } else if (isAffected) {
-          const intensity = painIntensity / 10;
-          mat.emissive.setHex(0xff0000);
-          mat.emissiveIntensity = intensity * 0.5;
-        } else {
+      // Reset all materials first
+      modelRef.current.traverse((child) => {
+        if (child.isMesh) {
+          const mat = child.material as THREE.MeshPhongMaterial;
           mat.emissive.setHex(0x000000);
           mat.emissiveIntensity = 0;
+        }
+      });
+      
+      // Apply highlighting based on selection and symptoms
+      modelRef.current.traverse((child) => {
+        if (child.isMesh) {
+          const mat = child.material as THREE.MeshPhongMaterial;
+          const meshName = child.name || child.userData.name || '';
+          
+          // Check if this mesh corresponds to the selected organ
+          const isSelected = selectedOrgan && (
+            meshName === selectedOrgan ||
+            meshName.toLowerCase().includes(selectedOrgan.toLowerCase()) ||
+            selectedOrgan.toLowerCase().includes(meshName.toLowerCase())
+          );
+          
+          // Check if this mesh is affected by symptoms
+          const isAffected = affectedOrgans.some(organ => 
+            meshName === organ ||
+            meshName.toLowerCase().includes(organ.toLowerCase()) ||
+            organ.toLowerCase().includes(meshName.toLowerCase())
+          );
+
+          if (isSelected) {
+            mat.emissive.setHex(0x0066ff);
+            mat.emissiveIntensity = 0.8;
+            console.log('Highlighting selected organ:', meshName);
+          } else if (isAffected) {
+            const intensity = painIntensity / 10;
+            mat.emissive.setHex(0xff0000);
+            mat.emissiveIntensity = intensity * 0.5;
+          }
         }
       });
     }, [affectedOrgans, painIntensity, selectedOrgan]);
@@ -267,8 +290,6 @@ function loadSystemModel(
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
-          
-          console.log('Found mesh:', child.name, child.userData);
 
           const standardMat = child.material as THREE.MeshStandardMaterial;
           const phongMat = new THREE.MeshPhongMaterial({
@@ -280,7 +301,7 @@ function loadSystemModel(
           child.material = phongMat;
           child.userData.originalMaterial = phongMat.clone();
           child.userData.layer = systemType;
-          child.userData.name = child.name || child.userData.name;
+          child.userData.name = child.name;
 
           organsMap.set(child.name, child as THREE.Mesh);
         }
