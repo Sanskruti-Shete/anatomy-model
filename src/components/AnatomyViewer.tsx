@@ -191,7 +191,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
 
       organsRef.current.forEach((organ, name) => {
         const isAffected = affectedOrgans.includes(name);
-        const isSelected = selectedOrgan === name;
+        const isSelected = selectedOrgan?.name === name;
         const mat = organ.material as THREE.MeshPhongMaterial;
 
         if (isSelected) {

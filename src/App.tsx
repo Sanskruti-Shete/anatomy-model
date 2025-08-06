@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Heart, Brain, Zap, Eye, Target, RotateCcw, Info, Settings, Activity } from 'lucide-react';
+import { Heart, Brain, Zap, Eye, Target, RotateCcw, Info, Settings, Activity } from 'lucide-react';
 import AnatomyViewer from './components/AnatomyViewer';
 import ControlPanel from './components/ControlPanel';
 import OrganInfo from './components/OrganInfo';
@@ -11,7 +11,6 @@ function App() {
   const [selectedSystem, setSelectedSystem] = useState<string>('all');
   const [painIntensity, setPainIntensity] = useState<number>(0);
   const [activeSymptoms, setActiveSymptoms] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [currentView, setCurrentView] = useState<string>('default');
   const anatomyViewerRef = useRef<any>(null);
 
@@ -41,11 +40,6 @@ function App() {
     }
   };
 
-  const filteredOrgans = organDatabase.filter(organ =>
-    organ.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    organ.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const affectedOrgans = activeSymptoms.flatMap(symptomId => {
     const symptom = symptomDatabase.find(s => s.id === symptomId);
     return symptom ? symptom.affectedOrgans : [];
@@ -64,20 +58,6 @@ function App() {
                 Anatomy Explorer
               </h1>
               <p className="text-slate-300">Interactive 3D Human Anatomy Model</p>
-            </div>
-
-            {/* Search */}
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search organs or symptoms..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                />
-              </div>
             </div>
 
             <ControlPanel
