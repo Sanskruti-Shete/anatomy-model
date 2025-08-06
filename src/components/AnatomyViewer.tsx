@@ -17,13 +17,13 @@ interface AnatomyViewerRef {
 }
 
 const systemModels: { [key: string]: string } = {
-  all: '/models/scene.gltf',
-  skeletal: '/models/skeletal-system.gltf',
-  muscular: '/models/muscular-system.gltf',
-  circulatory: '/models/circulatory-system.gltf',
+  all: '/models/spanchnology/scene.gltf',
+  skeletal: '/models/arthrology/scene.gltf',
+  muscular: '/models/muscular_insertions/scene.gltf',
+  circulatory: '/models/angiology/scene.gltf',
   respiratory: '/models/respiratory-system.gltf',
-  nervous: '/models/nervous-system.gltf',
-  digestive: '/models/digestive-system.gltf',
+  nervous: '/models/neurology/scene.gltf',
+  digestive: '/models/spanchnology/scene.gltf',
   urinary: '/models/urinary-system.gltf',
 };
 
