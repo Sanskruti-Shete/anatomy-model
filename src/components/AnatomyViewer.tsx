@@ -137,10 +137,30 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
         mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         raycasterRef.current.setFromCamera(mouseRef.current, camera);
-        const intersects = raycasterRef.current.intersectObjects(Array.from(organsRef.current.values()));
+        const intersects = raycasterRef.current.intersectObjects(scene.children, true);
+        
         if (intersects.length > 0) {
           const clickedOrgan = intersects[0].object as THREE.Mesh;
-          onOrganClick(clickedOrgan.userData.name);
+          console.log('Clicked object:', clickedOrgan.name, clickedOrgan.userData);
+          
+          // Try to find organ name from various sources
+          let organName = clickedOrgan.userData.name || clickedOrgan.name;
+          
+          // If no direct match, try to map common mesh names to organ names
+          if (!organName || organName === '') {
+            const meshName = clickedOrgan.name.toLowerCase();
+            if (meshName.includes('heart')) organName = 'Heart';
+            else if (meshName.includes('liver')) organName = 'Liver';
+            else if (meshName.includes('lung')) organName = 'Lungs';
+            else if (meshName.includes('stomach')) organName = 'Stomach';
+            else if (meshName.includes('kidney')) organName = 'Kidneys';
+            else if (meshName.includes('brain')) organName = 'Brain';
+            else if (meshName.includes('spine') || meshName.includes('vertebra')) organName = 'Spine';
+            else organName = clickedOrgan.name || 'Unknown Organ';
+          }
+          
+          console.log('Detected organ name:', organName);
+          onOrganClick(organName);
         }
       };
 
@@ -191,7 +211,7 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
 
       organsRef.current.forEach((organ, name) => {
         const isAffected = affectedOrgans.includes(name);
-        const isSelected = selectedOrgan?.name === name;
+        const isSelected = selectedOrgan === name;
         const mat = organ.material as THREE.MeshPhongMaterial;
 
         if (isSelected) {
@@ -247,6 +267,8 @@ function loadSystemModel(
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
+          
+          console.log('Found mesh:', child.name, child.userData);
 
           const standardMat = child.material as THREE.MeshStandardMaterial;
           const phongMat = new THREE.MeshPhongMaterial({
@@ -258,7 +280,7 @@ function loadSystemModel(
           child.material = phongMat;
           child.userData.originalMaterial = phongMat.clone();
           child.userData.layer = systemType;
-          child.userData.name = child.name;
+          child.userData.name = child.name || child.userData.name;
 
           organsMap.set(child.name, child as THREE.Mesh);
         }
