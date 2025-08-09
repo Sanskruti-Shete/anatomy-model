@@ -1,7 +1,13 @@
-import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  useState,
+} from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader, GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 interface AnatomyViewerProps {
   onOrganClick: (organName: string) => void;
@@ -12,23 +18,35 @@ interface AnatomyViewerProps {
 }
 
 interface AnatomyViewerRef {
-  setCameraPosition: (position: THREE.Vector3, target: THREE.Vector3) => void;
+  setCameraPosition: (
+    position: THREE.Vector3,
+    target: THREE.Vector3
+  ) => void;
   resetCamera: () => void;
 }
 
 const systemModels: { [key: string]: string } = {
   all: '/models/spanchnology/scene.gltf',
   skeletal: '/models/arthrology/scene.gltf',
-  muscular: '/models/muscular_insertions/scene.gltf',
+  muscular: '/models/myology/scene.gltf',
   circulatory: '/models/angiology/scene.gltf',
   respiratory: '/models/respiratory-system.gltf',
   nervous: '/models/neurology/scene.gltf',
-  digestive: '/models/spanchnology/scene.gltf',
+  digestive: '/models/angiology/Untitled.gltf',
   urinary: '/models/urinary-system.gltf',
 };
 
 const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
-  ({ onOrganClick, selectedSystem, affectedOrgans, painIntensity, selectedOrgan }, ref) => {
+  (
+    {
+      onOrganClick,
+      selectedSystem,
+      affectedOrgans,
+      painIntensity,
+      selectedOrgan,
+    },
+    ref
+  ) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(true);
     const sceneRef = useRef<THREE.Scene>();
@@ -40,6 +58,8 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
     const mouseRef = useRef<THREE.Vector2>(new THREE.Vector2());
     const modelRef = useRef<THREE.Group>();
     const currentSystemRef = useRef<string>('');
+    const isUserInteractingRef = useRef<boolean>(false);
+    const rotationSpeed = 0.005; // radians per frame
 
     useImperativeHandle(ref, () => ({
       setCameraPosition: (position: THREE.Vector3, target: THREE.Vector3) => {
@@ -54,8 +74,16 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
             const progress = Math.min(elapsed / duration, 1);
             const easeProgress = 1 - Math.pow(1 - progress, 3);
 
-            cameraRef.current!.position.lerpVectors(startPos, position, easeProgress);
-            controlsRef.current!.target.lerpVectors(startTarget, target, easeProgress);
+            cameraRef.current!.position.lerpVectors(
+              startPos,
+              position,
+              easeProgress
+            );
+            controlsRef.current!.target.lerpVectors(
+              startTarget,
+              target,
+              easeProgress
+            );
             controlsRef.current!.update();
 
             if (progress < 1) requestAnimationFrame(animate);
@@ -77,15 +105,23 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
             const progress = Math.min(elapsed / duration, 1);
             const easeProgress = 1 - Math.pow(1 - progress, 3);
 
-            cameraRef.current!.position.lerpVectors(startPos, defaultPos, easeProgress);
-            controlsRef.current!.target.lerpVectors(startTarget, defaultTarget, easeProgress);
+            cameraRef.current!.position.lerpVectors(
+              startPos,
+              defaultPos,
+              easeProgress
+            );
+            controlsRef.current!.target.lerpVectors(
+              startTarget,
+              defaultTarget,
+              easeProgress
+            );
             controlsRef.current!.update();
 
             if (progress < 1) requestAnimationFrame(animate);
           };
           animate();
         }
-      }
+      },
     }));
 
     useEffect(() => {
@@ -104,8 +140,14 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       camera.position.set(0, 0, 2.2);
       cameraRef.current = camera;
 
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+      });
+      renderer.setSize(
+        containerRef.current.clientWidth,
+        containerRef.current.clientHeight
+      );
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       containerRef.current.appendChild(renderer.domElement);
@@ -127,39 +169,47 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       controls.minDistance = 1.0;
       controlsRef.current = controls;
 
+      // Pause auto-rotation while the user is interacting
+      const onStart = () => (isUserInteractingRef.current = true);
+      const onEnd = () => (isUserInteractingRef.current = false);
+      controls.addEventListener('start', onStart);
+      controls.addEventListener('end', onEnd);
+
       setIsLoading(true);
-      loadSystemModel(selectedSystem, scene, organsRef.current, setIsLoading, modelRef);
+      loadSystemModel(
+        selectedSystem,
+        scene,
+        organsRef.current,
+        setIsLoading,
+        modelRef
+      );
       currentSystemRef.current = selectedSystem;
 
       const handleClick = (event: MouseEvent) => {
         const rect = containerRef.current!.getBoundingClientRect();
-        mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        mouseRef.current.x =
+          ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseRef.current.y =
+          -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
         raycasterRef.current.setFromCamera(mouseRef.current, camera);
-        const intersects = raycasterRef.current.intersectObjects(scene.children, true);
-        
+        const intersects = raycasterRef.current.intersectObjects(
+          scene.children,
+          true
+        );
+
         if (intersects.length > 0) {
-          const clickedOrgan = intersects[0].object as THREE.Mesh;
-          console.log('Clicked object:', clickedOrgan.name, clickedOrgan.userData);
-          
-          // Try to find organ name from various sources
-          let organName = clickedOrgan.userData.name || clickedOrgan.name;
-          
-          // If no direct match, try to map common mesh names to organ names
-          if (!organName || organName === '') {
-            const meshName = clickedOrgan.name.toLowerCase();
-            if (meshName.includes('heart')) organName = 'Heart';
-            else if (meshName.includes('liver')) organName = 'Liver';
-            else if (meshName.includes('lung')) organName = 'Lungs';
-            else if (meshName.includes('stomach')) organName = 'Stomach';
-            else if (meshName.includes('kidney')) organName = 'Kidneys';
-            else if (meshName.includes('brain')) organName = 'Brain';
-            else if (meshName.includes('spine') || meshName.includes('vertebra')) organName = 'Spine';
-            else organName = clickedOrgan.name || 'Unknown Organ';
+          const clicked = intersects[0].object as THREE.Object3D;
+          let organName = clicked.name;
+
+          // walk up parents to find meaningful name (if the mesh itself is generic)
+          let parent = clicked.parent;
+          while (parent && parent.name && parent.name !== 'Scene') {
+            organName = parent.name;
+            parent = parent.parent;
           }
-          
-          console.log('Detected organ name:', organName);
+
+          console.log('Detected organ:', organName);
           onOrganClick(organName);
         }
       };
@@ -168,9 +218,12 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
 
       const animate = () => {
         requestAnimationFrame(animate);
-        if (modelRef.current) {
-          modelRef.current.rotation.y += 0.005;
+
+        // Auto-rotate the model when present and the user is not interacting
+        if (modelRef.current && !isUserInteractingRef.current) {
+          modelRef.current.rotation.y += rotationSpeed;
         }
+
         controls.update();
         renderer.render(scene, camera);
       };
@@ -178,9 +231,13 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
 
       const handleResize = () => {
         if (!containerRef.current) return;
-        camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+        camera.aspect =
+          containerRef.current.clientWidth / containerRef.current.clientHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+        renderer.setSize(
+          containerRef.current.clientWidth,
+          containerRef.current.clientHeight
+        );
       };
 
       window.addEventListener('resize', handleResize);
@@ -188,20 +245,35 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
       return () => {
         window.removeEventListener('resize', handleResize);
         renderer.domElement.removeEventListener('click', handleClick);
+
+        // cleanup controls listeners and dispose
+        controls.removeEventListener('start', onStart);
+        controls.removeEventListener('end', onEnd);
+        controls.dispose();
+
         containerRef.current?.removeChild(renderer.domElement);
         renderer.dispose();
       };
     }, [onOrganClick]);
 
     useEffect(() => {
-      if (currentSystemRef.current !== selectedSystem && sceneRef.current) {
+      if (
+        currentSystemRef.current !== selectedSystem &&
+        sceneRef.current
+      ) {
         setIsLoading(true);
         if (modelRef.current) {
           sceneRef.current.remove(modelRef.current);
           modelRef.current = undefined;
         }
         organsRef.current.clear();
-        loadSystemModel(selectedSystem, sceneRef.current, organsRef.current, setIsLoading, modelRef);
+        loadSystemModel(
+          selectedSystem,
+          sceneRef.current,
+          organsRef.current,
+          setIsLoading,
+          modelRef
+        );
         currentSystemRef.current = selectedSystem;
       }
     }, [selectedSystem]);
@@ -209,39 +281,33 @@ const AnatomyViewer = forwardRef<AnatomyViewerRef, AnatomyViewerProps>(
     useEffect(() => {
       if (!modelRef.current || organsRef.current.size === 0) return;
 
-      // Reset all materials first
-      modelRef.current.traverse((child) => {
-        if (child.isMesh) {
-          const mat = child.material as THREE.MeshPhongMaterial;
+      modelRef.current.traverse((child: THREE.Object3D) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mat = (child as THREE.Mesh)
+            .material as THREE.MeshPhongMaterial;
           mat.emissive.setHex(0x000000);
           mat.emissiveIntensity = 0;
         }
       });
-      
-      // Apply highlighting based on selection and symptoms
-      modelRef.current.traverse((child) => {
-        if (child.isMesh) {
-          const mat = child.material as THREE.MeshPhongMaterial;
-          const meshName = child.name || child.userData.name || '';
-          
-          // Check if this mesh corresponds to the selected organ
-          const isSelected = selectedOrgan && (
-            meshName === selectedOrgan ||
-            meshName.toLowerCase().includes(selectedOrgan.toLowerCase()) ||
-            selectedOrgan.toLowerCase().includes(meshName.toLowerCase())
-          );
-          
-          // Check if this mesh is affected by symptoms
-          const isAffected = affectedOrgans.some(organ => 
-            meshName === organ ||
-            meshName.toLowerCase().includes(organ.toLowerCase()) ||
-            organ.toLowerCase().includes(meshName.toLowerCase())
+
+      const selectedLower = selectedOrgan?.toLowerCase() || '';
+      const affectedLower = affectedOrgans.map((o) => o.toLowerCase());
+
+      modelRef.current.traverse((child: THREE.Object3D) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const meshLower = (child.name || '').toLowerCase();
+          const mat = (child as THREE.Mesh)
+            .material as THREE.MeshPhongMaterial;
+
+          const isSelected =
+            selectedLower && meshLower.includes(selectedLower);
+          const isAffected = affectedLower.some((o) =>
+            meshLower.includes(o)
           );
 
           if (isSelected) {
             mat.emissive.setHex(0x0066ff);
             mat.emissiveIntensity = 0.8;
-            console.log('Highlighting selected organ:', meshName);
           } else if (isAffected) {
             const intensity = painIntensity / 10;
             mat.emissive.setHex(0xff0000);
@@ -278,7 +344,7 @@ function loadSystemModel(
 
   loader.load(
     modelPath,
-    (gltf) => {
+    (gltf: GLTF) => {
       const model = gltf.scene;
       model.scale.set(1.5, 1.5, 1.5);
 
@@ -286,24 +352,25 @@ function loadSystemModel(
       const center = box.getCenter(new THREE.Vector3());
       model.position.sub(center);
 
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
+      model.traverse((child: THREE.Object3D) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
 
-          const standardMat = child.material as THREE.MeshStandardMaterial;
+          const standardMat = mesh.material as THREE.MeshStandardMaterial;
           const phongMat = new THREE.MeshPhongMaterial({
             color: standardMat.color,
             emissive: 0x000000,
             shininess: 30,
           });
 
-          child.material = phongMat;
-          child.userData.originalMaterial = phongMat.clone();
-          child.userData.layer = systemType;
-          child.userData.name = child.name;
+          mesh.material = phongMat;
+          mesh.userData.originalMaterial = phongMat.clone();
+          mesh.userData.layer = systemType;
+          mesh.userData.name = mesh.name;
 
-          organsMap.set(child.name, child as THREE.Mesh);
+          organsMap.set(mesh.name, mesh);
         }
       });
 
@@ -312,7 +379,7 @@ function loadSystemModel(
       setIsLoading?.(false);
     },
     undefined,
-    (error) => {
+    (error: unknown) => {
       console.error(`Error loading ${systemType} model:`, error);
       setIsLoading?.(false);
     }
