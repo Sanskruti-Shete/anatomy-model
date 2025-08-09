@@ -313,10 +313,84 @@ function loadSystemModel(
     },
     undefined,
     (error) => {
-      console.error(`Error loading ${systemType} model:`, error);
+      console.warn(`GLTF model failed to load (likely Git LFS issue), creating fallback geometry for ${systemType}`);
+      
+      // Create fallback geometry when GLTF loading fails
+      const fallbackModel = createFallbackGeometry(systemType);
+      
+      fallbackModel.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          child.userData.layer = systemType;
+          child.userData.name = child.name;
+          organsMap.set(child.name, child as THREE.Mesh);
+        }
+      });
+      
+      scene.add(fallbackModel);
+      if (modelRef) modelRef.current = fallbackModel;
       setIsLoading?.(false);
     }
   );
+}
+
+function createFallbackGeometry(systemType: string): THREE.Group {
+  const group = new THREE.Group();
+  
+  // Define system-specific organs and their positions
+  const systemOrgans: { [key: string]: Array<{name: string, position: [number, number, number], color: number, geometry: THREE.BufferGeometry}> } = {
+    skeletal: [
+      { name: 'Skull', position: [0, 0.8, 0], color: 0xf0f0f0, geometry: new THREE.SphereGeometry(0.15, 16, 16) },
+      { name: 'Spine', position: [0, 0, 0], color: 0xe0e0e0, geometry: new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8) },
+      { name: 'Ribs', position: [0, 0.3, 0], color: 0xd0d0d0, geometry: new THREE.TorusGeometry(0.25, 0.02, 8, 16) },
+      { name: 'Pelvis', position: [0, -0.4, 0], color: 0xc0c0c0, geometry: new THREE.RingGeometry(0.15, 0.25, 8) }
+    ],
+    circulatory: [
+      { name: 'Heart', position: [-0.1, 0.2, 0], color: 0xff4444, geometry: new THREE.SphereGeometry(0.12, 16, 16) },
+      { name: 'Aorta', position: [0, 0.3, 0], color: 0xff6666, geometry: new THREE.CylinderGeometry(0.03, 0.03, 0.4, 8) },
+      { name: 'Arteries', position: [0.2, 0, 0], color: 0xff8888, geometry: new THREE.CylinderGeometry(0.02, 0.02, 0.6, 6) },
+      { name: 'Veins', position: [-0.2, 0, 0], color: 0x4444ff, geometry: new THREE.CylinderGeometry(0.02, 0.02, 0.6, 6) }
+    ],
+    nervous: [
+      { name: 'Brain', position: [0, 0.7, 0], color: 0xffaaff, geometry: new THREE.SphereGeometry(0.18, 16, 16) },
+      { name: 'Spinal Cord', position: [0, 0, 0], color: 0xffccff, geometry: new THREE.CylinderGeometry(0.03, 0.03, 1.0, 8) },
+      { name: 'Nerves', position: [0.15, 0.2, 0], color: 0xffddff, geometry: new THREE.CylinderGeometry(0.01, 0.01, 0.3, 6) }
+    ],
+    digestive: [
+      { name: 'Stomach', position: [-0.15, 0.1, 0], color: 0xffaa44, geometry: new THREE.SphereGeometry(0.1, 16, 16) },
+      { name: 'Liver', position: [0.2, 0.2, 0], color: 0x8B4513, geometry: new THREE.BoxGeometry(0.25, 0.15, 0.1) },
+      { name: 'Intestines', position: [0, -0.2, 0], color: 0xffcc66, geometry: new THREE.TorusGeometry(0.15, 0.05, 8, 16) },
+      { name: 'Kidneys', position: [0.25, -0.1, -0.1], color: 0x654321, geometry: new THREE.SphereGeometry(0.08, 12, 12) }
+    ],
+    muscular: [
+      { name: 'Biceps', position: [0.3, 0.3, 0], color: 0xff6666, geometry: new THREE.CylinderGeometry(0.06, 0.06, 0.2, 8) },
+      { name: 'Chest Muscles', position: [0, 0.3, 0.1], color: 0xff4444, geometry: new THREE.BoxGeometry(0.3, 0.15, 0.08) },
+      { name: 'Abdominals', position: [0, 0, 0.1], color: 0xff5555, geometry: new THREE.BoxGeometry(0.25, 0.3, 0.06) },
+      { name: 'Quadriceps', position: [0.15, -0.4, 0], color: 0xff3333, geometry: new THREE.CylinderGeometry(0.08, 0.08, 0.3, 8) }
+    ]
+  };
+  
+  // Default to digestive system if system not found
+  const organs = systemOrgans[systemType] || systemOrgans['digestive'];
+  
+  organs.forEach(organ => {
+    const material = new THREE.MeshPhongMaterial({ 
+      color: organ.color,
+      emissive: 0x000000,
+      shininess: 30
+    });
+    
+    const mesh = new THREE.Mesh(organ.geometry, material);
+    mesh.position.set(...organ.position);
+    mesh.name = organ.name;
+    mesh.userData.name = organ.name;
+    mesh.userData.originalMaterial = material.clone();
+    
+    group.add(mesh);
+  });
+  
+  return group;
 }
 
 AnatomyViewer.displayName = 'AnatomyViewer';
