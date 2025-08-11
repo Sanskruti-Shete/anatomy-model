@@ -32,7 +32,7 @@ const systemModels: { [key: string]: string } = {
   circulatory: '/models/angiology/scene.gltf',
   respiratory: '/models/respiratory-system.gltf',
   nervous: '/models/neurology/scene.gltf',
-  digestive: '/models/angiology/Untitled.gltf',
+  digestive: '/models/angiology/new.gltf',
   urinary: '/models/urinary-system.gltf',
 };
 
